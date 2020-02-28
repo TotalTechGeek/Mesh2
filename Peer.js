@@ -62,7 +62,6 @@ function initializeClientRead (peer, client, type) {
  * @param {net.Socket} client
  */
 function initializeOutgoingClient (peer, client) {
-  peer.outgoingConnections.push(client)
   client.on('close', () => {
     peer.outgoingConnections = peer.outgoingConnections.filter(x => x !== client)
   })
@@ -177,13 +176,16 @@ class Peer {
       client.id = id
       initializeOutgoingClient(this, client)
       this.events.emit('outgoing', client)
-
       if (this.server) { client.send('discover', { port: this.port, id: this.id }) }
     })
 
+    this.outgoingConnections.push(client)
+
     client.setTimeout(3e3)
     client.once('connect', () => client.setTimeout(0))
-    client.on('error', () => {})
+    client.on('error', () => {
+      this.outgoingConnections = this.outgoingConnections.filter(currentClient => currentClient !== client)
+    })
   }
 
   serverInit () {
