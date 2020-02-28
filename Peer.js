@@ -205,7 +205,7 @@ class Peer {
   }
 
   async wait () {
-    if (this.outgoingConnections.length) return true
+    if (this.outgoingConnections.filter(client => client.send).length) return true
     else {
       if (this.awaitingOutgoing) return this.awaitingOutgoing
     }
