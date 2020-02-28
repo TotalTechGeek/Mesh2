@@ -62,14 +62,14 @@ function initializeClientRead (peer, client, type) {
  * @param {net.Socket} client
  */
 function initializeOutgoingClient (peer, client) {
-  peer.outgoing.push(client)
+  peer.outgoingConnections.push(client)
   client.on('close', () => {
-    peer.outgoing = peer.outgoing.filter(x => x !== client)
+    peer.outgoingConnections = peer.outgoingConnections.filter(x => x !== client)
   })
 
   client.on('error', err => {
     if (err.code === 'ECONNRESET') {
-      // peer.outgoing = peer.outgoing.filter(x => x !== client)
+      // peer.outgoingConnections = peer.outgoingConnections.filter(x => x !== client)
     }
   })
 
@@ -85,15 +85,15 @@ function initializeOutgoingClient (peer, client) {
  * @param {net.Socket} client
  */
 function initializeIncomingClient (peer, client) {
-  peer.incoming.push(client)
+  peer.incomingConnections.push(client)
 
   client.on('close', () => {
-    peer.incoming = peer.incoming.filter(x => x !== client)
+    peer.incomingConnections = peer.incomingConnections.filter(x => x !== client)
   })
 
   client.on('error', err => {
     if (err.code === 'ECONNRESET') {
-      // peer.incoming = peer.incoming.filter(x => x !== client)
+      // peer.incomingConnections = peer.incomingConnections.filter(x => x !== client)
     }
   })
 
@@ -121,15 +121,15 @@ class Peer {
     this.client = client
     this.server = server
     this.discovery = new DiscoveryConstructor(this.id, name, { port, client, server })
-    this.incoming = []
-    this.outgoing = []
+    this.incomingConnections = []
+    this.outgoingConnections = []
     this.requests = {}
     this.requestCount = 0
     this.events = new EventEmitter()
     this.channels = new EventEmitter()
     this.questions = {}
-    this.incomingChannels = new EventEmitter()
-    this.outgoingChannels = new EventEmitter()
+    this.incoming = new EventEmitter()
+    this.outgoing = new EventEmitter()
     if (this.client) this.clientInit()
     if (this.server) this.serverInit()
     this.roundRobin = 0
@@ -145,7 +145,7 @@ class Peer {
     const id = this.requestCount++
     await this.send('request', { data, question, id })
     return new Promise(resolve => {
-      this.outgoingChannels.once(`request_${id}`, (socket, data) => {
+      this.outgoing.once(`request_${id}`, (socket, data) => {
         resolve(data)
       })
     })
@@ -169,7 +169,7 @@ class Peer {
   }
 
   connect (addresses, port, id) {
-    if (this.outgoing.find(client => client.id === id)) return
+    if (this.outgoingConnections.find(client => client.id === id)) return
 
     const address = addresses[0]
 
@@ -193,7 +193,7 @@ class Peer {
     })
 
     if (this.client) {
-      this.incomingChannels.on('discover', (socket, data) => {
+      this.incoming.on('discover', (socket, data) => {
         const { port, id } = data
         this.connect([socket.remoteAddress], port, id)
       })
@@ -203,7 +203,7 @@ class Peer {
   }
 
   async wait () {
-    if (this.outgoing.length) return true
+    if (this.outgoingConnections.length) return true
     else {
       if (this.awaitingOutgoing) return this.awaitingOutgoing
     }
@@ -220,13 +220,13 @@ class Peer {
 
   async send (channel, data) {
     await this.wait()
-    const connection = this.outgoing[this.roundRobin++ % this.outgoing.length]
+    const connection = this.outgoingConnections[this.roundRobin++ % this.outgoingConnections.length]
     connection.send(channel, data)
   }
 
   async broadcast (channel, data) {
     await this.wait()
-    this.outgoing.forEach(out => {
+    this.outgoingConnections.forEach(out => {
       out.send(channel, data)
     })
   }
@@ -241,12 +241,12 @@ class Peer {
     if (this.server) { this.clientServer.close() }
 
     if (this.client) {
-      this.incoming.forEach(client => {
+      this.incomingConnections.forEach(client => {
         client.end()
         client.destroy()
       })
 
-      this.outgoing.forEach(client => {
+      this.outgoingConnections.forEach(client => {
         client.end()
         client.destroy()
       })
