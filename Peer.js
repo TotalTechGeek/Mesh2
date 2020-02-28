@@ -207,6 +207,10 @@ class Peer
             if(this.server)
             client.send('discover', { port: this.port, id: this.id })
         })
+
+        client.setTimeout(3e3)
+        client.once('connect', () => client.setTimeout(0))
+        client.on('error', () => {})
     }
 
     serverInit()
