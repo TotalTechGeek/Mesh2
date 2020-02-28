@@ -15,6 +15,6 @@ peer.outgoing.on('pong', (socket, data) => {
 })
 
 let i = 0
-setTimeout(() => {
+setInterval(() => {
   peer.broadcast('ping', i++)
-}, 5000)
+}, 2500)
