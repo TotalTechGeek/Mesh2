@@ -222,6 +222,7 @@ class Peer {
 
   async send (channel, data) {
     await this.wait()
+    // todo : use a different method to track which connections exist. Probably use a set.
     const connection = this.outgoingConnections.filter(connection => connection.send)[this.roundRobin++ % this.outgoingConnections.length]
     connection.send(channel, data)
   }
