@@ -73,8 +73,8 @@ class BonjourDiscovery extends Discovery
         this.bonjour.destroy()
         delete this.bonjour
 
-        //this.events.removeAllListeners('closed')
-        //this.events.removeAllListeners('found')
+        this.events.removeAllListeners('closed')
+        this.events.removeAllListeners('found')
     }
 
     async publish()

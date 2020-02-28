@@ -2,7 +2,6 @@ const uuid = require('uuid').v4
 const net = require('net')
 const events = require('events')
 const msgpack = require('msgpack-lite')
-const ip = require('ip')
 
 function bufToInt(arr)
 {
@@ -79,6 +78,15 @@ function initializeOutgoingClient(peer, client)
     {
         peer.outgoing = peer.outgoing.filter(x => x !== client)
     })
+
+    client.on('error', err =>
+    {
+        if(err.code === 'ECONNRESET')
+        {
+            // peer.outgoing = peer.outgoing.filter(x => x !== client)
+        }
+    })
+
     client.events = new events()
     initializeClientRead(peer, client, 'outgoingChannels')
     client.send = (channel, data) => writeToSocket(client, channel, data)
@@ -97,6 +105,14 @@ function initializeIncomingClient(peer, client)
     client.on('close', () =>
     {
         peer.incoming = peer.incoming.filter(x => x !== client)
+    })
+
+    client.on('error', err =>
+    {
+        if(err.code === 'ECONNRESET')
+        {
+            // peer.incoming = peer.incoming.filter(x => x !== client)
+        }
     })
 
     client.events = new events()
@@ -186,10 +202,10 @@ class Peer
         {
             client.id = id
             initializeOutgoingClient(this, client) 
-            this.events.emit('outgoing')
+            this.events.emit('outgoing', client)
 
             if(this.server)
-            client.send('discover', { port: this.port, addresses: [ip.address()], id: this.id })
+            client.send('discover', { port: this.port, id: this.id })
         })
     }
 
@@ -198,14 +214,15 @@ class Peer
         this.clientServer = net.createServer(incoming =>
         {
             initializeIncomingClient(this, incoming)
+            this.events.emit('incoming', incoming)
         })
 
 
         if(this.client)
         this.incomingChannels.on('discover', (socket, data) =>
         {
-            const { addresses, port, id } = data
-            this.connect(addresses, port)
+            const { port, id } = data
+            this.connect([socket.remoteAddress], port, id)
         })
 
         this.clientServer.listen(this.port)
