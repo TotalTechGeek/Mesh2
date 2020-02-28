@@ -160,7 +160,7 @@ class Peer {
 
   clientInit () {
     this.discovery.events.on('found', ({ addresses, port, id }) => {
-      this.connect(addresses, port)
+      this.connect(addresses, port, id)
     })
 
     this.discovery.events.on('closed', (obj) => {
