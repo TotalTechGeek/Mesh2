@@ -74,7 +74,7 @@ function initializeOutgoingClient (peer, client) {
   })
 
   client.events = new EventEmitter()
-  initializeClientRead(peer, client, 'outgoingChannels')
+  initializeClientRead(peer, client, 'outgoing')
   client.send = (channel, data) => writeToSocket(client, channel, data)
 }
 
@@ -98,7 +98,7 @@ function initializeIncomingClient (peer, client) {
   })
 
   client.events = new EventEmitter()
-  initializeClientRead(peer, client, 'incomingChannels')
+  initializeClientRead(peer, client, 'incoming')
   client.send = (channel, data) => writeToSocket(client, channel, data)
 }
 
