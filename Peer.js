@@ -222,13 +222,13 @@ class Peer {
 
   async send (channel, data) {
     await this.wait()
-    const connection = this.outgoingConnections[this.roundRobin++ % this.outgoingConnections.length]
+    const connection = this.outgoingConnections.filter(connection => connection.send)[this.roundRobin++ % this.outgoingConnections.length]
     connection.send(channel, data)
   }
 
   async broadcast (channel, data) {
     await this.wait()
-    this.outgoingConnections.forEach(out => {
+    this.outgoingConnections.filter(connection => connection.send).forEach(out => {
       out.send(channel, data)
     })
   }
